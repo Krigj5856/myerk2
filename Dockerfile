@@ -8,15 +8,17 @@ RUN apt update -y && apt install --no-install-recommends -y \
     xterm init systemd snapd vim net-tools curl wget git tzdata \
     dbus-x11 x11-utils x11-xserver-utils x11-apps \
     software-properties-common python3 python3-pip python3-venv \
-    supervisor procps
+    supervisor procps gnupg2
 
-# Install Firefox from PPA
-RUN add-apt-repository ppa:mozillateam/ppa -y
-RUN echo 'Package: *' > /etc/apt/preferences.d/mozilla-firefox
-RUN echo 'Pin: release o=LP-PPA-mozillateam' >> /etc/apt/preferences.d/mozilla-firefox
-RUN echo 'Pin-Priority: 1001' >> /etc/apt/preferences.d/mozilla-firefox
-RUN echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:jammy";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+# Install Firefox directly from Mozilla (not PPA)
 RUN apt update -y && apt install -y firefox
+
+# If above fails, install via snap or direct download
+# RUN snap install firefox
+# OR
+# RUN wget -O /tmp/firefox.tar.bz2 "https://download.mozilla.org/?product=firefox-latest&os=linux64" && \
+#     tar -xjf /tmp/firefox.tar.bz2 -C /opt/ && \
+#     ln -s /opt/firefox/firefox /usr/local/bin/firefox
 
 # Install xubuntu icon theme
 RUN apt update -y && apt install -y xubuntu-icon-theme
