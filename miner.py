@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Miner Automation - Railway Ubuntu Desktop
-5 Terminals | Firefox | 3 Tabs/Batch | 6 Min Check
+5 Terminals (All Open Together) | 6 Min Check | Auto-Restart | Telegram Updates
 """
 
 import os
@@ -52,9 +52,8 @@ API_BASE = "https://api.unmineable.com/v5"
 WALLET_ADDRESS = "nano_1g97x3h6wxd4h577p6dricapigs78ccc7tcowjfm67hewsmg7qob4xwc8jak"
 COIN = "NANO"
 
-BATCH_SIZE = 3
-GAP_BETWEEN_BATCHES = 60
-CHECK_INTERVAL = 360
+# No batch - all terminals open together
+CHECK_INTERVAL = 360  # 6 minutes
 
 # ==================== TERMINALS (5 URLs) ====================
 TERMINALS = [
@@ -121,7 +120,7 @@ def close_firefox_window_by_name(miner_name: str):
             try:
                 if 'firefox' in proc.info['name'].lower():
                     cmdline = ' '.join(proc.info['cmdline']) if proc.info['cmdline'] else ''
-                    if miner_name in cmdline:
+                    if miner_name in cmdline or f"/{miner_name}" in cmdline:
                         proc.terminate()
                         proc.wait(timeout=5)
                         log(f"✓ Closed {miner_name} window")
@@ -132,16 +131,22 @@ def close_firefox_window_by_name(miner_name: str):
     except:
         return False
 
+def restart_miner(miner):
+    name, url = miner[1], miner[3]
+    log(f"   Restarting {name}...")
+    close_firefox_window_by_name(miner[2])
+    time.sleep(2)
+    open_firefox_window(url, name)
+    telegram.send_log(f"Restarted {name}", "RESTART")
+    time.sleep(3)
+
 # ==================== MAIN ====================
 def run():
     total = len(TERMINALS)
-    batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
     
     log("="*60)
-    log("🚀 MINER AUTOMATION STARTED")
+    log("🚀 MINER AUTOMATION STARTED (All 5 Tabs Together)")
     log(f"   Total Terminals: {total}")
-    log(f"   Batch Size: {BATCH_SIZE}")
-    log(f"   Total Batches: {batches}")
     log(f"   Check Interval: {CHECK_INTERVAL//60} minutes")
     log(f"   System: {get_system_info()}")
     log("="*60)
@@ -157,25 +162,16 @@ def run():
     log(f"✓ UUID: {uuid[:8]}...")
     telegram.send_log(f"API Connected - UUID: {uuid[:8]}...", "SUCCESS")
     
-    # OPEN ALL BATCHES
-    for b in range(batches):
-        start = b * BATCH_SIZE
-        end = min(start + BATCH_SIZE, total)
-        batch = TERMINALS[start:end]
-        
-        log(f"\n📁 Batch {b+1}/{batches}")
-        for m in batch:
-            open_firefox_window(m[3], m[1])
-            time.sleep(3)
-        
-        if end < total:
-            log(f"⏳ Waiting {GAP_BETWEEN_BATCHES} seconds...")
-            time.sleep(GAP_BETWEEN_BATCHES)
+    # ========== OPEN ALL 5 TERMINALS TOGETHER ==========
+    log("\n📁 Opening all 5 terminals...")
+    for m in TERMINALS:
+        open_firefox_window(m[3], m[1])
+        time.sleep(2)  # Small delay between openings
     
     log(f"\n✅ All {total} terminals opened!")
     telegram.send_log(f"All {total} terminals opened successfully!", "SUCCESS")
     
-    # MONITORING LOOP
+    # ========== MONITORING LOOP ==========
     log(f"\n🔍 Starting monitoring (every {CHECK_INTERVAL//60} minutes)")
     telegram.send_log(f"Monitoring started - Checking every {CHECK_INTERVAL//60} minutes", "CHECK")
     
@@ -196,26 +192,24 @@ def run():
         
         success_rate = (online * 100) / total if total > 0 else 0
         
+        # Send status to Telegram
         if offline:
             telegram.send_log(f"Status: {online}/{total} ONLINE ({success_rate:.1f}%) | {len(offline)} OFFLINE", "WARNING")
         else:
             telegram.send_log(f"Status: {online}/{total} ONLINE (100%) - All good!", "SUCCESS")
         
+        # Restart offline miners
         if offline:
             log(f"🔄 Restarting {len(offline)} offline miners...")
             telegram.send_log(f"Restarting {len(offline)} offline miners", "RESTART")
             
             for m in offline:
-                log(f"   Restarting {m[1]}...")
-                close_firefox_window_by_name(m[2])
-                time.sleep(2)
-                open_firefox_window(m[3], m[1])
-                telegram.send_log(f"Restarted {m[1]}", "RESTART")
-                time.sleep(3)
+                restart_miner(m)
             
             log(f"✅ Restarted {len(offline)} miners")
             telegram.send_log(f"Restarted {len(offline)} miners successfully", "SUCCESS")
         
+        # Send system info
         log(f"   System: {get_system_info()}")
 
 def signal_handler(sig, frame):
