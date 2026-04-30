@@ -5,49 +5,55 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Base packages
 RUN apt update -y && apt install --no-install-recommends -y \
     xfce4 xfce4-goodies tigervnc-standalone-server novnc websockify sudo \
-    xterm init systemd snapd vim net-tools curl wget git tzdata \
-    dbus-x11 x11-utils x11-xserver-utils x11-apps \
-    software-properties-common python3 python3-pip python3-venv \
-    supervisor procps gnupg2
+    xterm init systemd snapd vim net-tools curl wget git tzdata
 
-# Install Firefox directly from Mozilla (not PPA)
+RUN apt update -y && apt install -y dbus-x11 x11-utils x11-xserver-utils x11-apps
+RUN apt install software-properties-common -y
+
+# Firefox installation
+RUN add-apt-repository ppa:mozillateam/ppa -y
+RUN echo 'Package: *' >> /etc/apt/preferences.d/mozilla-firefox
+RUN echo 'Pin: release o=LP-PPA-mozillateam' >> /etc/apt/preferences.d/mozilla-firefox
+RUN echo 'Pin-Priority: 1001' >> /etc/apt/preferences.d/mozilla-firefox
+RUN echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:jammy";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
 RUN apt update -y && apt install -y firefox
-
-# If above fails, install via snap or direct download
-# RUN snap install firefox
-# OR
-# RUN wget -O /tmp/firefox.tar.bz2 "https://download.mozilla.org/?product=firefox-latest&os=linux64" && \
-#     tar -xjf /tmp/firefox.tar.bz2 -C /opt/ && \
-#     ln -s /opt/firefox/firefox /usr/local/bin/firefox
-
-# Install xubuntu icon theme
 RUN apt update -y && apt install -y xubuntu-icon-theme
 
-# Create Xauthority file
-RUN touch /root/.Xauthority
+# ========== ADD THIS SECTION FOR PYTHON & MINER SCRIPT ==========
+# Install Python and pip
+RUN apt install -y python3 python3-pip
 
-# Setup Python environment
+# Create Python virtual environment (optional but recommended)
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies
+# Install required Python packages
 RUN pip install --no-cache-dir requests psutil
 
-# Copy miner script
-COPY miner.py /opt/miner.py
-RUN chmod +x /opt/miner.py
+# Create directory for miner script
+RUN mkdir -p /opt/scripts
 
-# Create supervisor config for miner script
-RUN mkdir -p /var/log/supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Copy miner script (make sure miner.py is in your repo)
+COPY miner.py /opt/scripts/miner.py
+RUN chmod +x /opt/scripts/miner.py
 
-# Expose ports
+# Create a startup script to run miner in background
+RUN echo '#!/bin/bash' > /opt/scripts/start_miner.sh && \
+    echo 'sleep 10' >> /opt/scripts/start_miner.sh && \
+    echo 'export DISPLAY=:0' >> /opt/scripts/start_miner.sh && \
+    echo 'cd /opt/scripts' >> /opt/scripts/start_miner.sh && \
+    echo '/opt/venv/bin/python /opt/scripts/miner.py >> /var/log/miner.log 2>&1 &' >> /opt/scripts/start_miner.sh && \
+    chmod +x /opt/scripts/start_miner.sh
+# ========== END OF ADDED SECTION ==========
+
+RUN touch /root/.Xauthority
+
 EXPOSE 5901
 EXPOSE 6080
 
-# Start everything
+# Modified CMD to also run miner script
 CMD bash -c "vncserver -localhost no -SecurityTypes None -geometry 1024x768 --I-KNOW-THIS-IS-INSECURE && \
              openssl req -new -subj "/C=JP" -x509 -days 365 -nodes -out self.pem -keyout self.pem && \
              websockify -D --web=/usr/share/novnc/ --cert=self.pem 6080 localhost:5901 && \
-             supervisord -c /etc/supervisor/conf.d/supervisord.conf && \
+             /opt/scripts/start_miner.sh && \
              tail -f /dev/null"
