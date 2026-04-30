@@ -10,7 +10,7 @@ RUN apt update -y && apt install --no-install-recommends -y \
 RUN apt update -y && apt install -y dbus-x11 x11-utils x11-xserver-utils x11-apps
 RUN apt install software-properties-common -y
 
-# Install Python and pip (no venv needed)
+# Install Python and pip
 RUN apt install -y python3 python3-pip
 
 # Install required Python packages globally
@@ -32,7 +32,7 @@ RUN mkdir -p /opt/scripts
 COPY miner.py /opt/scripts/miner.py
 RUN chmod +x /opt/scripts/miner.py
 
-# Create startup script
+# Create startup script to run miner in background
 RUN echo '#!/bin/bash' > /opt/scripts/start_miner.sh && \
     echo 'sleep 15' >> /opt/scripts/start_miner.sh && \
     echo 'export DISPLAY=:0' >> /opt/scripts/start_miner.sh && \
