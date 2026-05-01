@@ -1,41 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Miner Automation - 12 Terminals Only
-3 Tabs/Batch | 1 Min Gap | 6 Min Check
+Miner Automation - Railway Ubuntu Desktop
+12 Terminals | All Open Together | Always Active | Auto-Restart Offline Miners
 """
 
 import os
 import sys
 import subprocess
 import time
-import argparse
-import psutil
+import signal
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
-def auto_install_dependencies():
-    required = ['requests', 'psutil', 'pillow']
-    for package in required:
-        try:
-            if package == 'pillow':
-                __import__('PIL')
-            else:
-                __import__(package)
-            print(f"[OK] {package} already installed")
-        except ImportError:
-            print(f"[*] Installing {package}...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", package, "--quiet"])
-            print(f"[OK] {package} installed")
+# ==================== INSTALL DEPENDENCIES ====================
+def ensure_dependencies():
+    try:
+        import requests
+        import psutil
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "requests", "psutil", "--quiet"])
 
-auto_install_dependencies()
+ensure_dependencies()
 
 import requests
-from PIL import ImageGrab
+import psutil
 
-# ==================== TELEGRAM (NEW BOT TOKEN) ====================
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8624711171:AAEqWiSMbrxWl1N3Hw22IZgqENicqJXq03g")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "6955911349")
+# ==================== TELEGRAM ====================
+TELEGRAM_BOT_TOKEN = "8624711171:AAEqWiSMbrxWl1N3Hw22IZgqENicqJXq03g"
+TELEGRAM_CHAT_ID = "6955911349"
 
 class TelegramLogger:
     def __init__(self):
@@ -45,27 +38,25 @@ class TelegramLogger:
             requests.post(f"{self.base_url}/sendMessage", json={"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}, timeout=10)
         except:
             pass
-    def send_photo(self, image_path: str, caption: str):
-        try:
-            with open(image_path, 'rb') as f:
-                requests.post(f"{self.base_url}/sendPhoto", files={'photo': f}, data={'chat_id': TELEGRAM_CHAT_ID, 'caption': caption, 'parse_mode': 'HTML'}, timeout=30)
-            os.remove(image_path)
-        except:
-            pass
+    def send_log(self, message: str, level: str = "INFO"):
+        emojis = {"INFO": "📘", "SUCCESS": "✅", "ERROR": "❌", "WARNING": "⚠️", 
+                  "ONLINE": "🟢", "OFFLINE": "🔴", "RESTART": "🔄", "START": "🚀", "CHECK": "🔍"}
+        emoji = emojis.get(level, "📝")
+        self.send_message(f"{emoji} <b>{level}</b>\n{message}")
 
 telegram = TelegramLogger()
 
 # ==================== CONFIG ====================
-FIREFOX_PATH = r"C:\Program Files\Mozilla Firefox\firefox.exe"
+FIREFOX_CMD = "firefox"
 API_BASE = "https://api.unmineable.com/v5"
 WALLET_ADDRESS = "nano_1g97x3h6wxd4h577p6dricapigs78ccc7tcowjfm67hewsmg7qob4xwc8jak"
 COIN = "NANO"
-BATCH_SIZE = 3
-GAP_BETWEEN_BATCHES = 60
-CHECK_INTERVAL = 360
 
-# ==================== 12 TERMINALS ONLY ====================
-TERMINALS_12 = [
+CHECK_INTERVAL = 360  # 6 minutes
+
+# ==================== 12 TERMINALS (All open together) ====================
+# You can change these to any 12 terminals you want
+TERMINALS = [
     [1, "Terminal 1", "lpa5neewvrg3efhfoqiuc5", "https://ais-pre-lpa5neewvrg3efhfoqiuc5-158414749269.asia-east1.run.app"],
     [2, "Terminal 2", "u27dqik55hsbpuc3a4zdjg", "https://ais-pre-u27dqik55hsbpuc3a4zdjg-158414749269.asia-east1.run.app"],
     [3, "Terminal 3", "s46wg4fbogdnawfz7lponw", "https://ais-pre-s46wg4fbogdnawfz7lponw-158414749269.asia-east1.run.app"],
@@ -81,8 +72,10 @@ TERMINALS_12 = [
 ]
 
 # ==================== FUNCTIONS ====================
-def log(msg): print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
-def send_tg(title, msg, emoji="📘"): telegram.send_message(f"{emoji} <b>{title}</b>\n{msg}")
+def log(message: str):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] {message}")
+
 def get_system_info():
     try:
         cpu = psutil.cpu_percent(interval=1)
@@ -91,119 +84,154 @@ def get_system_info():
     except:
         return "N/A"
 
-def take_screenshot(filename="screenshot.png"):
+def get_uuid() -> Optional[str]:
     try:
-        screenshot = ImageGrab.grab()
-        screenshot.save(filename)
-        return filename
-    except:
+        r = requests.get(f"{API_BASE}/address/{WALLET_ADDRESS}?coin={COIN}", 
+                        headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
+        data = r.json()
+        if data.get('success'):
+            return data['data']['uuid']
+        return None
+    except Exception as e:
+        log(f"UUID error: {e}")
         return None
 
-def get_uuid():
+def check_miner_status(miner_name: str, uuid: str) -> bool:
     try:
-        r = requests.get(f"{API_BASE}/address/{WALLET_ADDRESS}?coin={COIN}", headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
-        return r.json().get('data', {}).get('uuid')
-    except:
-        return None
-
-def check_status(miner_name, uuid):
-    try:
-        r = requests.get(f"{API_BASE}/account/{uuid}/workers", headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
-        workers = r.json().get('data', {}).get('randomx', {}).get('workers', [])
-        for w in workers:
-            if w.get('name') == miner_name:
-                return w.get('online', False)
+        r = requests.get(f"{API_BASE}/account/{uuid}/workers", 
+                        headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
+        data = r.json()
+        if data.get('success'):
+            workers = data['data'].get('randomx', {}).get('workers', [])
+            for w in workers:
+                if w.get('name') == miner_name:
+                    return w.get('online', False)
         return False
     except:
         return False
 
-def open_window(url, name):
+def open_firefox_window(url: str, name: str):
     try:
-        subprocess.Popen([FIREFOX_PATH, "-new-window", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen([FIREFOX_CMD, "--new-window", url], 
+                         stdout=subprocess.DEVNULL, 
+                         stderr=subprocess.DEVNULL)
+        log(f"✓ Opened {name}")
         return True
-    except:
+    except Exception as e:
+        log(f"✗ Failed to open {name}: {e}")
         return False
 
-def close_window(miner_name):
+def close_firefox_window_by_name(miner_name: str):
     try:
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            if proc.info['name'] == 'firefox.exe' and miner_name in str(proc.info['cmdline']):
-                proc.terminate()
-                return True
+            try:
+                if 'firefox' in proc.info['name'].lower():
+                    cmdline = ' '.join(proc.info['cmdline']) if proc.info['cmdline'] else ''
+                    if miner_name in cmdline:
+                        proc.terminate()
+                        proc.wait(timeout=5)
+                        log(f"✓ Closed {miner_name} window")
+                        return True
+            except:
+                pass
+        return False
     except:
-        pass
-    return False
+        return False
 
-def run_workflow(terminals, workflow_name):
-    if not os.path.exists(FIREFOX_PATH):
-        send_tg("ERROR", "Firefox not found!", "❌")
-        return
+def restart_miner(miner):
+    """Close old window and open new one (stays open permanently)"""
+    name, url = miner[1], miner[3]
+    log(f"   🔄 Restarting {name}...")
+    telegram.send_log(f"Restarting {name}", "RESTART")
     
-    total = len(terminals)
-    batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
+    close_firefox_window_by_name(miner[2])
+    time.sleep(2)
+    open_firefox_window(url, name)
+    time.sleep(2)
+
+# ==================== MAIN ====================
+def run():
+    total = len(TERMINALS)
     
-    log(f"{workflow_name} Started | Total: {total}")
-    send_tg("WORKFLOW STARTED", f"{workflow_name}\nTotal: {total}\n{get_system_info()}", "🚀")
+    log("="*60)
+    log("🚀 MINER AUTOMATION STARTED (12 Terminals - Always Active)")
+    log(f"   Total Terminals: {total}")
+    log(f"   All terminals open together (no batch system)")
+    log(f"   Check Interval: {CHECK_INTERVAL//60} minutes")
+    log(f"   System: {get_system_info()}")
+    log("="*60)
+    
+    telegram.send_log(f"Miner Started - {total} terminals | Check every {CHECK_INTERVAL//60} min", "START")
     
     uuid = get_uuid()
     if not uuid:
-        send_tg("ERROR", "Failed to get UUID!", "❌")
+        log("❌ Failed to get UUID")
+        telegram.send_log("Failed to get UUID from Unmineable API", "ERROR")
         return
     
-    # Open first batch (for screenshot)
-    log("Opening BATCH 1...")
-    first_batch = terminals[0:BATCH_SIZE]
-    for m in first_batch:
-        open_window(m[3], m[1])
-        time.sleep(2)
+    log(f"✓ UUID: {uuid[:8]}...")
+    telegram.send_log(f"API Connected - UUID: {uuid[:8]}...", "SUCCESS")
     
-    time.sleep(30)
-    ss = take_screenshot(f"screenshot_{workflow_name.replace(' ', '_')}.png")
-    if ss:
-        caption = f"📸 BATCH 1 SCREENSHOT\n{workflow_name}\n{get_system_info()}"
-        telegram.send_photo(ss, caption)
+    # ========== OPEN ALL 12 TERMINALS TOGETHER ==========
+    log("\n📁 Opening all 12 terminals...")
+    for m in TERMINALS:
+        open_firefox_window(m[3], m[1])
+        time.sleep(2)  # Small delay between openings
     
-    time.sleep(GAP_BETWEEN_BATCHES)
+    log(f"\n✅ All {total} terminals opened successfully!")
+    telegram.send_log(f"All {total} terminals opened successfully! They will stay open permanently.", "SUCCESS")
     
-    # Open remaining batches
-    for b in range(1, batches):
-        start = b * BATCH_SIZE
-        end = min(start + BATCH_SIZE, total)
-        for m in terminals[start:end]:
-            open_window(m[3], m[1])
-            time.sleep(2)
-        if end < total:
-            time.sleep(GAP_BETWEEN_BATCHES)
+    # ========== MONITORING LOOP (Every 6 minutes) ==========
+    log(f"\n🔍 Starting monitoring (every {CHECK_INTERVAL//60} minutes)")
+    telegram.send_log(f"Monitoring started - Checking every {CHECK_INTERVAL//60} minutes", "CHECK")
     
-    log("All terminals opened!")
-    send_tg("ALL OPENED", f"All {total} terminals opened!\n{get_system_info()}", "✅")
-    
-    # Monitoring loop
     while True:
         time.sleep(CHECK_INTERVAL)
-        offline, online = [], 0
-        for m in terminals:
-            if check_status(m[2], uuid):
+        
+        log(f"\n🔍 Checking status...")
+        offline = []
+        online = 0
+        
+        for m in TERMINALS:
+            if check_miner_status(m[2], uuid):
                 online += 1
+                log(f"   ✅ {m[1]} - ONLINE")
             else:
+                log(f"   ❌ {m[1]} - OFFLINE")
                 offline.append(m)
         
+        success_rate = (online * 100) / total if total > 0 else 0
+        
+        # Send status to Telegram
         if offline:
-            send_tg(f"STATUS - {len(offline)} OFFLINE", f"{workflow_name}: {online}/{total} ONLINE\n{get_system_info()}", "⚠️")
-            for m in offline:
-                close_window(m[2])
-                time.sleep(2)
-                open_window(m[3], m[1])
-                time.sleep(3)
-            send_tg("RESTART COMPLETE", f"Restarted {len(offline)} miners", "✅")
+            telegram.send_log(f"Status: {online}/{total} ONLINE ({success_rate:.1f}%) | {len(offline)} OFFLINE", "WARNING")
         else:
-            send_tg("STATUS - ALL ONLINE", f"{workflow_name}: {online}/{total} ONLINE (100%)\n{get_system_info()}", "✅")
+            telegram.send_log(f"Status: {online}/{total} ONLINE (100%) - All good!", "SUCCESS")
+        
+        # Restart offline miners (one by one)
+        if offline:
+            log(f"🔄 Restarting {len(offline)} offline miners...")
+            telegram.send_log(f"Restarting {len(offline)} offline miners", "RESTART")
+            
+            for m in offline:
+                restart_miner(m)
+            
+            log(f"✅ Restarted {len(offline)} miners")
+        
+        # Send system info
+        log(f"   System: {get_system_info()}")
 
-# ==================== MAIN ====================
+def signal_handler(sig, frame):
+    log("\n⚠ Stopping miner script...")
+    telegram.send_log("Miner script stopped", "WARNING")
+    sys.exit(0)
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--workflow', type=str, default='W1')
-    args = parser.parse_args()
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     
-    # Only 12 terminals, so ignore workflow selection or just run the single set
-    run_workflow(TERMINALS_12, "12 Terminals (1-12)")
+    # Wait for desktop to fully load
+    log("Waiting 15 seconds for desktop to load...")
+    time.sleep(15)
+    
+    run()
