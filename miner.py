@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Miner Automation - Railway Ubuntu Desktop
-3 Windows/Batch | 1 Min Active | Auto Close | 6 Min Check | All 270 Terminals
+3 Windows/Batch | 1 Min Active | Batch Waits for Close | 6 Min Check | All 270 Terminals
 """
 
 import os
@@ -56,7 +56,6 @@ COIN = "NANO"
 
 BATCH_SIZE = 3
 WINDOW_ACTIVE_TIME = 60  # 1 minute
-GAP_BETWEEN_BATCHES = 5  # 5 seconds gap
 CHECK_INTERVAL = 360  # 6 minutes
 
 # ==================== ALL 270 TERMINALS ====================
@@ -124,7 +123,7 @@ ALL_TERMINALS = [
     [58, "Terminal 58", "tjgjx6v3ej6cdiufclpnj2", "https://ais-pre-tjgjx6v3ej6cdiufclpnj2-49332687696.asia-east1.run.app"],
     [59, "Terminal 59", "npjgjawetbnhbxhrcxhpg2", "https://ais-pre-npjgjawetbnhbxhrcxhpg2-49332687696.asia-east1.run.app"],
     [60, "Terminal 60", "pbu7p6mipvtfehnac5dx5u", "https://ais-pre-pbu7p6mipvtfehnac5dx5u-49332687696.asia-east1.run.app"],
-    
+
     # Terminals 61-90
     [61, "Terminal 61", "nuezgc4afy6sme62bew44z", "https://ais-pre-nuezgc4afy6sme62bew44z-628481697275.asia-east1.run.app"],
     [62, "Terminal 62", "m6ehhbbroys3q7kw5rx2us", "https://ais-pre-m6ehhbbroys3q7kw5rx2us-628481697275.asia-east1.run.app"],
@@ -156,7 +155,7 @@ ALL_TERMINALS = [
     [88, "Terminal 88", "7tqqdtn7xv5y74z54g6sfo", "https://ais-pre-7tqqdtn7xv5y74z54g6sfo-628481697275.asia-east1.run.app"],
     [89, "Terminal 89", "iulydxepty7epinwlovhis", "https://ais-pre-iulydxepty7epinwlovhis-628481697275.asia-east1.run.app"],
     [90, "Terminal 90", "uelstzyxoml33a672cjsjl", "https://ais-pre-uelstzyxoml33a672cjsjl-628481697275.asia-east1.run.app"],
-    
+
     # Terminals 91-120
     [91, "Terminal 91", "pkp2mar7g5siberzb4un3x", "https://ais-pre-pkp2mar7g5siberzb4un3x-459098080991.asia-southeast1.run.app"],
     [92, "Terminal 92", "67bvdj3ktln2z2xikpn2fw", "https://ais-pre-67bvdj3ktln2z2xikpn2fw-459098080991.asia-southeast1.run.app"],
@@ -188,7 +187,7 @@ ALL_TERMINALS = [
     [118, "Terminal 118", "nb45zsu7f4toepxodksehm", "https://ais-pre-nb45zsu7f4toepxodksehm-459098080991.asia-southeast1.run.app"],
     [119, "Terminal 119", "yqqry3zbzqdildicx4ymdg", "https://ais-pre-yqqry3zbzqdildicx4ymdg-459098080991.asia-southeast1.run.app"],
     [120, "Terminal 120", "fg3gvzmv4ca2fnfpjbviwt", "https://ais-pre-fg3gvzmv4ca2fnfpjbviwt-459098080991.asia-southeast1.run.app"],
-    
+
     # Terminals 121-150
     [121, "Terminal 121", "2kkfeuhvcesukiphhd52ol", "https://ais-pre-2kkfeuhvcesukiphhd52ol-216967324577.asia-southeast1.run.app"],
     [122, "Terminal 122", "2lrry45a4oulyz665rw3uy", "https://ais-pre-2lrry45a4oulyz665rw3uy-216967324577.asia-southeast1.run.app"],
@@ -220,7 +219,7 @@ ALL_TERMINALS = [
     [148, "Terminal 148", "ahkqsuihbejxpvee34xz3g", "https://ais-pre-ahkqsuihbejxpvee34xz3g-216967324577.asia-southeast1.run.app"],
     [149, "Terminal 149", "gbe7th3ws4lyqjjetwhvzi", "https://ais-pre-gbe7th3ws4lyqjjetwhvzi-216967324577.asia-southeast1.run.app"],
     [150, "Terminal 150", "yubvn257ednwpinon2yadx", "https://ais-pre-yubvn257ednwpinon2yadx-216967324577.asia-southeast1.run.app"],
-    
+
     # Terminals 151-180
     [151, "Terminal 151", "mesn7ght2d4iozoirtovgz", "https://ais-pre-mesn7ght2d4iozoirtovgz-747427474427.asia-east1.run.app"],
     [152, "Terminal 152", "h2y6db5vbgte7lci3zt26a", "https://ais-pre-h2y6db5vbgte7lci3zt26a-747427474427.asia-east1.run.app"],
@@ -252,7 +251,7 @@ ALL_TERMINALS = [
     [178, "Terminal 178", "onzspyueazzrm56qb6qkz6", "https://ais-pre-onzspyueazzrm56qb6qkz6-747427474427.asia-east1.run.app"],
     [179, "Terminal 179", "72u4aaivbb6oupgff4kcph", "https://ais-pre-72u4aaivbb6oupgff4kcph-747427474427.asia-east1.run.app"],
     [180, "Terminal 180", "mfu3z4lepai4zybb7eex35", "https://ais-pre-mfu3z4lepai4zybb7eex35-747427474427.asia-east1.run.app"],
-    
+
     # Terminals 181-210
     [181, "Terminal 181", "nhc5cz5e6oopoerdauuy6y", "https://ais-pre-nhc5cz5e6oopoerdauuy6y-176013927578.asia-east1.run.app"],
     [182, "Terminal 182", "ikrxidnxd6khp6qdmm6jgp", "https://ais-pre-ikrxidnxd6khp6qdmm6jgp-176013927578.asia-east1.run.app"],
@@ -284,7 +283,7 @@ ALL_TERMINALS = [
     [208, "Terminal 208", "lizxpn4fz7y4g5tsu3pc4g", "https://ais-pre-lizxpn4fz7y4g5tsu3pc4g-176013927578.asia-east1.run.app"],
     [209, "Terminal 209", "xar2klfffkfclp7nn2n5zd", "https://ais-pre-xar2klfffkfclp7nn2n5zd-176013927578.asia-east1.run.app"],
     [210, "Terminal 210", "6sf7ahgha2psbynf6klbcd", "https://ais-pre-6sf7ahgha2psbynf6klbcd-176013927578.asia-east1.run.app"],
-    
+
     # Terminals 211-240
     [211, "Terminal 211", "xtithrhgg6o7iwzpxk5ykp", "https://ais-pre-xtithrhgg6o7iwzpxk5ykp-757334599303.asia-east1.run.app"],
     [212, "Terminal 212", "dlfno4t3tvlfjjkl6uvkoy", "https://ais-pre-dlfno4t3tvlfjjkl6uvkoy-757334599303.asia-east1.run.app"],
@@ -316,7 +315,7 @@ ALL_TERMINALS = [
     [238, "Terminal 238", "jxuspfqtngvyz24h6erkep", "https://ais-pre-jxuspfqtngvyz24h6erkep-757334599303.asia-east1.run.app"],
     [239, "Terminal 239", "ocq4ocs5wcqtkwkvrq5y2r", "https://ais-pre-ocq4ocs5wcqtkwkvrq5y2r-757334599303.asia-east1.run.app"],
     [240, "Terminal 240", "o2j7b47inlfmaoix2gnrei", "https://ais-pre-o2j7b47inlfmaoix2gnrei-757334599303.asia-east1.run.app"],
-    
+
     # Terminals 241-270
     [241, "Terminal 241", "q26vi43f2z7jhqgl5rjgh6", "https://ais-pre-q26vi43f2z7jhqgl5rjgh6-585247436141.asia-east1.run.app"],
     [242, "Terminal 242", "vjbavzwmfhs2l4x53q7fvz", "https://ais-pre-vjbavzwmfhs2l4x53q7fvz-585247436141.asia-east1.run.app"],
@@ -417,27 +416,27 @@ def close_window_by_name(miner_name: str):
     except:
         return False
 
-def open_batch_with_auto_close(batch_num: int, batch_terminals: List):
-    """Open a batch of terminals, close after 1 minute"""
+def process_batch_with_wait(batch_num: int, batch_terminals: List):
+    """Open batch, wait for close, then return"""
     log(f"\n📁 BATCH {batch_num} - Opening {len(batch_terminals)} terminals")
     telegram.send_log(f"Batch {batch_num}: Opening {len(batch_terminals)} terminals", "OPEN")
     
+    # Open all windows in this batch
     for m in batch_terminals:
         open_window(m[3], m[1])
         time.sleep(2)
     
-    # Schedule close after 1 minute
-    def close_batch():
-        log(f"   🚪 Closing Batch {batch_num} windows (1 minute completed)")
-        telegram.send_log(f"Batch {batch_num}: Closing {len(batch_terminals)} windows", "CLOSE")
-        for m in batch_terminals:
-            close_window_by_name(m[2])
+    # Wait for 1 minute
+    log(f"   ⏳ Batch {batch_num} windows will stay open for {WINDOW_ACTIVE_TIME} seconds...")
+    time.sleep(WINDOW_ACTIVE_TIME)
     
-    timer = threading.Timer(WINDOW_ACTIVE_TIME, close_batch)
-    timer.daemon = True
-    timer.start()
+    # Close all windows in this batch
+    log(f"   🚪 Closing Batch {batch_num} windows")
+    telegram.send_log(f"Batch {batch_num}: Closing {len(batch_terminals)} windows", "CLOSE")
+    for m in batch_terminals:
+        close_window_by_name(m[2])
     
-    return timer
+    log(f"   ✅ Batch {batch_num} completed")
 
 def restart_miner_with_auto_close(miner):
     """Restart offline miner and close after 1 minute"""
@@ -449,16 +448,12 @@ def restart_miner_with_auto_close(miner):
     time.sleep(2)
     open_window(url, name)
     
-    # Schedule close after 1 minute
-    def close_restarted():
-        log(f"   🚪 Closing restarted {name} window (1 minute completed)")
-        close_window_by_name(miner[2])
+    # Wait for 1 minute then close
+    log(f"   ⏳ {name} will close after {WINDOW_ACTIVE_TIME} seconds")
+    time.sleep(WINDOW_ACTIVE_TIME)
     
-    timer = threading.Timer(WINDOW_ACTIVE_TIME, close_restarted)
-    timer.daemon = True
-    timer.start()
-    
-    return timer
+    log(f"   🚪 Closing restarted {name} window")
+    close_window_by_name(miner[2])
 
 # ==================== MAIN ====================
 def run():
@@ -485,19 +480,19 @@ def run():
     
     log(f"✓ UUID: {uuid[:8]}...")
     
-    # ========== OPEN ALL BATCHES (1 min each, then close) ==========
-    log("\n📁 PROCESSING ALL BATCHES")
+    # ========== PROCESS ALL BATCHES SEQUENTIALLY ==========
+    log("\n📁 PROCESSING ALL BATCHES (One by one)")
     for b in range(batches):
         start = b * BATCH_SIZE
         end = min(start + BATCH_SIZE, total)
         batch = ALL_TERMINALS[start:end]
         
-        open_batch_with_auto_close(b + 1, batch)
+        process_batch_with_wait(b + 1, batch)
         
-        # Small gap after batch closes
+        # Small gap between batches
         if end < total:
-            log(f"⏳ Waiting {GAP_BETWEEN_BATCHES} seconds before next batch...")
-            time.sleep(GAP_BETWEEN_BATCHES)
+            log(f"⏳ Waiting 5 seconds before next batch...")
+            time.sleep(5)
     
     log(f"\n✅ All {batches} batches processed!")
     telegram.send_log(f"All {batches} batches processed (total {total} terminals)", "SUCCESS")
@@ -529,12 +524,11 @@ def run():
             telegram.send_log(f"Status: {online}/{total} ONLINE (100%) - All good!", "SUCCESS")
         
         if offline:
-            log(f"🔄 Restarting {len(offline)} offline miners...")
-            telegram.send_log(f"Restarting {len(offline)} offline miners (each will close in 1 min)", "RESTART")
+            log(f"🔄 Restarting {len(offline)} offline miners (one by one)...")
+            telegram.send_log(f"Restarting {len(offline)} offline miners", "RESTART")
             
             for m in offline:
                 restart_miner_with_auto_close(m)
-                time.sleep(2)
             
             log(f"✅ Restarted {len(offline)} miners")
         
