@@ -32,7 +32,7 @@ RUN mkdir -p /opt/scripts
 COPY miner.py /opt/scripts/miner.py
 RUN chmod +x /opt/scripts/miner.py
 
-# Create startup script to run miner in background
+# Create startup script
 RUN echo '#!/bin/bash' > /opt/scripts/start_miner.sh && \
     echo 'sleep 15' >> /opt/scripts/start_miner.sh && \
     echo 'export DISPLAY=:0' >> /opt/scripts/start_miner.sh && \
